@@ -55,7 +55,7 @@ def grabDoc(path):
 		return df_doc
 
 
-def grabDocsUserRecursive(path):
+def grabDocsUserRecursive(path, list_of_docs):
     
 	all_folder_paths = os.listdir(path)
 
@@ -66,31 +66,21 @@ def grabDocsUserRecursive(path):
 	for path in all_folder_paths:
 		if os.path.isfile(path):
 			df_cdoc = grabDoc(path)
-#			print (df_cdoc.head())
 			list_of_docs.append(df_cdoc)
 		else:
-			grabDocsUserRecursive(path)
+			grabDocsUserRecursive(path, list_of_docs)
 
 	return list_of_docs
 
 if __name__ == '__main__':
 
-	list_of_doc_frames = []
+	list_of_docs = []
+	
+	list_of_docs = Parallel(n_jobs=-1, verbose=8)(delayed(grabDocsUserRecursive)(r'd:\datasets\maildir\\' + user, list_of_docs) for user in list_of_users)
+	
+	list_of_docs = [pd.concat(docs) for docs in list_of_docs]
 
-	for idx_user, user in enumerate(list_of_users):
+	df_docs = pd.concat(list_of_docs)
 
-		if idx_user>1: continue
-		print (idx_user, user)
-		list_of_docs = []
-		grabDocsUserRecursive(r'd:\datasets\maildir\\' + user)
-		df_docs = pd.concat(list_of_docs)
-		df_docs['user'] = user
-		print (df_docs.shape[0])
-#		df_docs.to_csv('%s.csv' % user, index=False)
-
-		list_of_doc_frames.append(df_docs)
-
-	df_all_user_results = pd.concat(list_of_doc_frames)
-
-	df_all_user_results.to_csv('all_results.csv', index=False, encoding='utf-8')
+	df_docs.to_csv('all_results.csv', index=False, encoding='utf-8')
 
